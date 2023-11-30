@@ -17,4 +17,4 @@ CHROMATIC_SCALE = ["e", "f", "fis", "g", "aes", "a", "bes", "b", "c", "cis", "d"
 
 BASIC_CHORDS = ["c", "d", "e", "f", "g", "a", "bes", "b"]
 
-VARIATIONS = ["", "7", "m", "m7", "sus"]
+VARIATIONS = ["", "7", "m", "m7", "sus", "2"]
