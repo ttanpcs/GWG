@@ -3,6 +3,7 @@ import argparse
 from pathlib import Path
 from patterns import STRUMMING_PATTERNS, BASIC_CHORDS, VARIATIONS, CHROMATIC_SCALE
 from random import shuffle, choice
+import subprocess
 
 basedir = Path(os.path.abspath(os.path.dirname(__file__)))
 file_path = basedir / 'warmup.ily'
@@ -13,6 +14,20 @@ def pick_chord(chords):
 def create_line(chords):
     notes = [(pick_chord(chords)) for i in range(4)]
     return f'{notes[0][0]}1:{notes[0][1]} {notes[1][0]}:{notes[1][1]} {notes[2][0]}:{notes[2][1]} {notes[3][0]}:{notes[3][1]}'
+
+def match_note(string, fret):
+    base_notes = [24, 19, 15, 10, 5, 0]
+    note_index = base_notes[string - 1] + fret
+    note_string = f'{CHROMATIC_SCALE[note_index % len(CHROMATIC_SCALE)]}'
+    if note_index < 8:
+        note_string += ','
+    elif (note_index - 8) // len(CHROMATIC_SCALE) >= 1:
+        for i in range((note_index - 8) // len(CHROMATIC_SCALE)):
+            note_string += '\''
+    return note_string
+
+def match_note_string(string, fret, beats): 
+    return f'{match_note(string, fret)}{beats}\\{string}'
 
 def create_pentatonic_exercies(f, index):
     major = CHROMATIC_SCALE[index]
@@ -42,14 +57,40 @@ def create_strumming_exercises(f):
         f.write("\t}\n")
     f.write(">>\n")
 
+def create_bending_exercises(f, start_fret, end_fret):
+    f.write("<<\n\t\\new TabStaff {\n\t\t")
+    for i in range(5):
+        string = choice(range(1, 6))
+        fret = choice(range(start_fret, end_fret + 1))
+        bend_amount = choice([1, 2])
+        f.write(f'{match_note_string(string, fret + bend_amount, 2)} ')
+        f.write(f'{match_note_string(string, fret, 8)}\\^ ')
+        f.write(f'{match_note_string(string, fret + bend_amount, 8)}\\^ ')
+        f.write(f'{match_note_string(string, fret, 4)} ')
+
+    f.write("\n\t}\n")
+    f.write(">>\n")
+
+def create_picking_exercises(f):
+    pass
+
+def create_palm_muting_exercises(f):
+    pass
+
+def create_header(f):
+    f.write("\\version \"2.24.3\"\n")
+    f.write("\\header {\n\t tagline = #f\n}\n")
+
 def generate():
     parser = argparse.ArgumentParser("Guitar Warmup Generator", description="generate randomized set of chord, strumming and pentatonic warmups.")
     parser.add_argument("--file", "-f", type=Path, default=file_path, help="ily generated file path")
     args = parser.parse_args()
     with open(args.file, "w") as f:
-        f.write("\\version \"2.24.1\"\n")
+        create_header(f)
         create_strumming_exercises(f)
         create_pentatonic_exercies(f, choice(range(len(CHROMATIC_SCALE))))
+        create_bending_exercises(f, 5, 8)
+    result = subprocess.run(f'lilypond "{args.file}" > NUL 2>&1', shell=True)
 
 if __name__ == "__main__":
     generate()
