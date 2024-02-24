@@ -3,6 +3,7 @@ import argparse
 from pathlib import Path
 from patterns import STRUMMING_PATTERNS, BASIC_CHORDS, VARIATIONS, CHROMATIC_SCALE
 from random import shuffle, choice
+from references import generate_reference_page
 import subprocess
 
 basedir = Path(os.path.abspath(os.path.dirname(__file__)))
@@ -11,9 +12,10 @@ file_path = basedir / 'warmup.ily'
 def pick_chord(chords):
     return choice(chords), choice(VARIATIONS) 
 
-def create_line(chords):
-    notes = [(pick_chord(chords)) for i in range(4)]
-    return f'{notes[0][0]}1:{notes[0][1]} {notes[1][0]}:{notes[1][1]} {notes[2][0]}:{notes[2][1]} {notes[3][0]}:{notes[3][1]}'
+def create_line(chords, num=4):
+    notes = [(pick_chord(chords)) for i in range(num)]
+    note_strings = [ f'{notes[i][0]}1:{notes[i][1]}' for i in range(num)]
+    return ' '.join(note_strings)
 
 def match_note(string, fret):
     base_notes = [24, 19, 15, 10, 5, 0]
@@ -57,10 +59,10 @@ def create_strumming_exercises(f):
         f.write("\t}\n")
     f.write(">>\n")
 
-def create_bending_exercises(f, start_fret, end_fret):
+def create_bending_exercises(f, start_fret, end_fret, num=5):
     f.write("<<\n\t\\new TabStaff {\n\t\t")
-    for i in range(5):
-        string = choice(range(1, 6))
+    for i in range(num):
+        string = choice(range(1, 5))
         fret = choice(range(start_fret, end_fret + 1))
         bend_amount = choice([1, 2])
         f.write(f'{match_note_string(string, fret + bend_amount, 2)} ')
@@ -77,6 +79,19 @@ def create_picking_exercises(f):
 def create_palm_muting_exercises(f):
     pass
 
+def create_slapping_exercises(f, num=6):
+    f.write("<<\n\t\\new ChordNames {\n\t\t\\chordmode {\n") 
+    f.write(f"\t\t\t{create_line(BASIC_CHORDS, num)}\n")
+    f.write("\t\t}\n\t}\n\t\\new TabStaff {\n\t\t")
+    for j in range(num):
+        f.write(f'\\once \\override TabNoteHead.style = #\'cross {match_note_string(1, 0, 4)}^\markup { "X" }')
+        f.write(f'\\once \\override TabNoteHead.style = #\'cross {match_note_string(2, 0, 4)}^\markup { "X" }')
+        f.write(f'\\once \\override TabNoteHead.style = #\'cross {match_note_string(3, 0, 4)}^\markup { "X" }')
+        f.write(f'\\once \\override TabNoteHead.style = #\'cross {match_note_string(4, 0, 4)}^\markup { "X" }')
+    f.write("\n\t}\n")
+    f.write(">>\n")
+
+
 def create_header(f):
     f.write("\\version \"2.24.3\"\n")
     f.write("\\header {\n\t tagline = #f\n}\n")
@@ -90,7 +105,9 @@ def generate():
         create_strumming_exercises(f)
         create_pentatonic_exercies(f, choice(range(len(CHROMATIC_SCALE))))
         create_bending_exercises(f, 5, 8)
+        create_slapping_exercises(f)
     result = subprocess.run(f'lilypond "{args.file}" > NUL 2>&1', shell=True)
+    generate_reference_page(args.file.with_suffix('.pdf'))
 
 if __name__ == "__main__":
     generate()

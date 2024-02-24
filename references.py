@@ -21,17 +21,17 @@ class GuitarReference:
         return f'{self.name}'
 
     def __repr__(self):
-        return f'{self.name}'
+        return f'{self.link}'
 
 class GuitarReferenceGenerator:
     def __init__(
             self, 
             guitar_references, 
             percents = {
-                "In pause" : 0.2, 
-                "Not started" : 0.1,
+                "In pause" : 0.1, 
+                "Not started" : 0.025,
                 "In progress" : 0.8,
-                "Done" : 0.7
+                "Done" : 0.3
             }
         ):
         gr_by_status = sorted(guitar_references, key=lambda gr: gr.status)
