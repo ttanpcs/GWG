@@ -1,7 +1,7 @@
 import os
 import argparse
 from pathlib import Path
-from patterns import STRUMMING_PATTERNS, BASIC_CHORDS, VARIATIONS, CHROMATIC_SCALE
+from patterns import STRUMMING_PATTERNS, BASIC_CHORDS, SPECIFIC_VARIATIONS, UNIVERSAL_VARIATIONS, CHROMATIC_SCALE, TAPPING_PATTERNS
 from random import shuffle, choice
 from references import generate_reference_page
 import subprocess
@@ -10,7 +10,18 @@ basedir = Path(os.path.abspath(os.path.dirname(__file__)))
 file_path = basedir / 'warmup.ily'
 
 def pick_chord(chords):
-    return choice(chords), choice(VARIATIONS) 
+    chord = choice(chords)
+    return chord, choice(UNIVERSAL_VARIATIONS + SPECIFIC_VARIATIONS[chord]) 
+
+def pick_tap(fret, is_major, start_fret, end_fret):
+    tones = [fret - 5, fret, fret + 7, fret + 12, fret + 19]
+    if is_major:
+        tones += [fret - 8, fret + 4, fret + 16]
+    else:
+        tones += [fret - 9, fret + 3, fret + 15]
+    tones = list(sorted(filter(lambda x: x >= start_fret and x <= end_fret, tones)))
+    index = choice(range(0, len(tones) - 2))
+    return tones[index: index + 3]
 
 def create_line(chords, num=4):
     notes = [(pick_chord(chords)) for i in range(num)]
@@ -73,6 +84,36 @@ def create_bending_exercises(f, start_fret, end_fret, num=5):
     f.write("\n\t}\n")
     f.write(">>\n")
 
+def create_two_handed_tapping_exercises(f, strings, start_fret, end_fret):
+    ADJUSTMENTS = {1:0, 2:7, 3:3}
+    f.write("<<\n\t\\new ChordNames {\n\t\t\\chordmode {\n\t\t\t")
+    memory = []
+    for i in range(len(TAPPING_PATTERNS)):
+        string = choice(strings)
+        index = choice(range(len(CHROMATIC_SCALE)))
+        note = CHROMATIC_SCALE[(index + ADJUSTMENTS[string]) % len(CHROMATIC_SCALE)]
+        is_major = choice([0, 1]) == 1
+        tones = pick_tap(index, is_major, start_fret, end_fret)
+        if (is_major):
+            f.write(f"{note}1 ")
+        else:
+            f.write(f"{note}1:m ")
+        memory.append([string, tones])
+    f.write("\n\t\t}\n\t}\n\t\\new TabStaff {\n\t\t")
+
+    for i in range(len(TAPPING_PATTERNS)):
+        if len(TAPPING_PATTERNS[i]) == 3:
+            f.write("\\tuplet 3/4 { ")
+        for j in TAPPING_PATTERNS[i]:
+            f.write(f'{match_note_string(memory[i][0], memory[i][1][j], 4)} ')
+        if len(TAPPING_PATTERNS[i]) == 3:
+            f.write("} ")
+    f.write("\n\t}\n")
+    f.write(">>\n")
+
+def create_sweep_exercises():
+    pass
+
 def create_picking_exercises(f):
     pass
 
@@ -91,7 +132,6 @@ def create_slapping_exercises(f, num=6):
     f.write("\n\t}\n")
     f.write(">>\n")
 
-
 def create_header(f):
     f.write("\\version \"2.24.3\"\n")
     f.write("\\header {\n\t tagline = #f\n}\n")
@@ -106,6 +146,7 @@ def generate():
         create_pentatonic_exercies(f, choice(range(len(CHROMATIC_SCALE))))
         create_bending_exercises(f, 5, 8)
         create_slapping_exercises(f)
+        create_two_handed_tapping_exercises(f, range(1, 4), 4, 19)
     result = subprocess.run(f'lilypond "{args.file}" > NUL 2>&1', shell=True)
     generate_reference_page(args.file.with_suffix('.pdf'))
 
