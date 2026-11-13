@@ -4,6 +4,7 @@ from pathlib import Path
 from patterns import STRUMMING_PATTERNS, BASIC_CHORDS, SPECIFIC_VARIATIONS, UNIVERSAL_VARIATIONS, CHROMATIC_SCALE, TAPPING_PATTERNS, ALTERNATE_PICKING_PATTERNS
 from random import shuffle, choice, sample
 from references import generate_reference_page
+from fretboards import chord_2_filepath, chord_2_text
 import subprocess
 
 basedir = Path(os.path.abspath(os.path.dirname(__file__)))
@@ -25,8 +26,8 @@ def pick_tap(fret, is_major, start_fret, end_fret):
 
 def create_line(chords, num=4):
     notes = [(pick_chord(chords)) for i in range(num)]
-    note_strings = [ f'{notes[i][0]}1:{notes[i][1]}' for i in range(num)]
-    return ' '.join(note_strings)
+    note_strings = [ "\\tweak text \\markup { \\with-url " + f'"{chord_2_filepath(notes[i][0], notes[i][1])}" {chord_2_text(notes[i][0], notes[i][1])}'+ "} " + f'{notes[i][0]}1:{notes[i][1]}' for i in range(num)]
+    return '\n'.join(note_strings)
 
 def match_note(string, fret):
     base_notes = [24, 19, 15, 10, 5, 0]
@@ -229,7 +230,6 @@ def generate():
     parser.add_argument("--file", "-f", type=Path, default=file_path, help="ily generated file path")
     args = parser.parse_args()
     exercises = [
-        create_strumming_exercises,
         lambda x: create_pentatonic_exercies(x, choice(range(len(CHROMATIC_SCALE)))),
         lambda x: create_bending_exercises(x, 5, 8),
         create_slapping_exercises,
@@ -241,7 +241,8 @@ def generate():
 
     with open(args.file, "w") as f:
         create_header(f)
-        picked_exercises = sample(exercises, 4)
+        create_strumming_exercises(f)
+        picked_exercises = sample(exercises, 3)
         for exercise in sorted(picked_exercises, key=exercises.index):
             exercise(f)
     result = subprocess.run(f'lilypond "{args.file}" > NUL 2>&1', shell=True)
