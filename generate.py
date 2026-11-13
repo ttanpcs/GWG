@@ -1,8 +1,8 @@
 import os
 import argparse
 from pathlib import Path
-from patterns import STRUMMING_PATTERNS, BASIC_CHORDS, SPECIFIC_VARIATIONS, UNIVERSAL_VARIATIONS, CHROMATIC_SCALE, TAPPING_PATTERNS
-from random import shuffle, choice
+from patterns import STRUMMING_PATTERNS, BASIC_CHORDS, SPECIFIC_VARIATIONS, UNIVERSAL_VARIATIONS, CHROMATIC_SCALE, TAPPING_PATTERNS, ALTERNATE_PICKING_PATTERNS
+from random import shuffle, choice, sample
 from references import generate_reference_page
 import subprocess
 
@@ -39,8 +39,56 @@ def match_note(string, fret):
             note_string += '\''
     return note_string
 
-def match_note_string(string, fret, beats): 
-    return f'{match_note(string, fret)}{beats}\\{string}'
+def match_note_string(string, fret, beats = None): 
+    if beats is None:
+        return f'{match_note(string, fret)}'
+    else:
+        return f'{match_note(string, fret)}{beats}\\{string}'
+
+def create_alternate_picking_exercise(f):
+    f.write("<<\n\t\\new TabStaff {\n\t\t")
+    for pattern in ALTERNATE_PICKING_PATTERNS:
+        for alteration in [pattern, pattern, list(reversed(pattern)), list(reversed(pattern))]:
+            f.write(f'\\tuplet {len(alteration)}/4 ')
+            f.write("{ ")
+            for note in alteration:
+                f.write(" < ")
+                for i in range(6): f.write(f'{match_note_string(i, note)} ') 
+                f.write(" > ")
+
+            f.write(" } ")
+
+    f.write("\n\t}\n")
+    f.write(">>\n")
+
+def create_palm_muting_exercise(f):
+    lines = [
+        '<<',
+        '\\new Voice \\with {\n',
+        '\t\\consists Pitch_squash_engraver\n',
+        '} \\relative c\'\'{\n',
+        '\t\\autoBeamOff\n',
+        '\t\\override TextSpanner.bound-details.left.text = "P.M"\n',
+        '\tb16 [b16 b16 b16]\n',
+        '\tb16 [b16 b16 b16]\n',
+        '\tb16 [b16 b16 b16]\n',
+        '\tb16 [b16 b16 b16]\n',
+        '\n',
+        '\tb16\\startTextSpan [b16 b16 b16]\n',
+        '\tb16 [b16 b16 b16]\n',
+        '\tb16 [b16 b16 b16]\n',
+        '\tb16 [b16 b16 b16]\\stopTextSpan\n',
+        '\n',
+        '\t\\override TextSpanner.bound-details.left.text = "P.M"\n',
+        '\tb16\\startTextSpan [b16 b16 b16]\\stopTextSpan\n',
+        '\tb16 [b16 b16 b16]\n',
+        '\tb16\\startTextSpan [b16 b16 b16]\\stopTextSpan\n',
+        '\tb16 [b16 b16 b16]\n',
+        '}\n'
+        '>>',
+    ]
+    for line in lines:
+        f.write(line)
 
 def create_pentatonic_exercies(f, index):
     major = CHROMATIC_SCALE[index]
@@ -111,8 +159,44 @@ def create_two_handed_tapping_exercises(f, strings, start_fret, end_fret):
     f.write("\n\t}\n")
     f.write(">>\n")
 
-def create_sweep_exercises():
-    pass
+def create_sweep_exercises(f):
+    f.write("<<\n\t\\new TabStaff {\n\t\t")
+    f.write("\\tuplet 6/4 { ")
+    for i in (list(range(3, 0, -1)) + list(range(1, 4))):
+        f.write(f'\\once \\override TabNoteHead.style = #\'cross {match_note_string(i, 0, 4)}^\markup { "X" }')
+    f.write("} ")
+    for i in (list(range(4, 0, -1)) + list(range(1, 5))):
+        f.write(f'\\once \\override TabNoteHead.style = #\'cross {match_note_string(i, 0, 8)}^\markup { "X" }')
+    f.write("\\tuplet 6/4 { ")
+    f.write(f'{match_note_string(3, 12, 4)} ')
+    f.write(f'{match_note_string(2, 11, 4)} ')
+    f.write(f'{match_note_string(1, 10, 4)} ')
+    f.write(f'{match_note_string(1, 13, 4)} ')
+    f.write(f'{match_note_string(2, 11, 4)} ')
+    f.write(f'{match_note_string(3, 12, 4)} ')
+    f.write("} ")
+    f.write(f'{match_note_string(3, 10, 8)} (')
+    f.write(f'{match_note_string(3, 12, 8)}) ')
+    f.write(f'{match_note_string(2, 11, 8)} ')
+    f.write(f'{match_note_string(1, 10, 8)} ')
+    f.write(f'{match_note_string(1, 13, 8)} (')
+    f.write(f'{match_note_string(1, 10, 8)}) ')
+    f.write(f'{match_note_string(2, 11, 8)} ')
+    f.write(f'{match_note_string(3, 12, 8)} ')
+    
+    f.write(f'{match_note_string(4, 9, 16)} (')
+    f.write(f'{match_note_string(4, 12, 16)}) ')
+    f.write(f'{match_note_string(3, 11, 8)} ')
+    f.write(f'{match_note_string(2, 10, 8)} ')
+    f.write(f'{match_note_string(1, 9, 8)} ')
+    f.write(f'{match_note_string(1, 12, 16)} (')
+    f.write(f'{match_note_string(1, 9, 16)})')
+    f.write(f'{match_note_string(2, 10, 8)} ')
+    f.write(f'{match_note_string(3, 11, 8)} ')
+    f.write(f'{match_note_string(4, 12, 8)} ')
+
+    f.write("\n\t}\n")
+    f.write(">>\n")
 
 def create_picking_exercises(f):
     pass
@@ -135,18 +219,31 @@ def create_slapping_exercises(f, num=6):
 def create_header(f):
     f.write("\\version \"2.24.3\"\n")
     f.write("\\header {\n\t tagline = #f\n}\n")
+    f.write("\\paper {\n")
+    f.write("  indent = 0\n")
+    f.write("  print-all-headers = ##t\n")
+    f.write("}\n")
 
 def generate():
     parser = argparse.ArgumentParser("Guitar Warmup Generator", description="generate randomized set of chord, strumming and pentatonic warmups.")
     parser.add_argument("--file", "-f", type=Path, default=file_path, help="ily generated file path")
     args = parser.parse_args()
+    exercises = [
+        create_strumming_exercises,
+        lambda x: create_pentatonic_exercies(x, choice(range(len(CHROMATIC_SCALE)))),
+        lambda x: create_bending_exercises(x, 5, 8),
+        create_slapping_exercises,
+        lambda x: create_two_handed_tapping_exercises(x, range(1, 4), 4, 19),
+        create_sweep_exercises,
+        create_alternate_picking_exercise,
+        create_palm_muting_exercise
+    ]
+
     with open(args.file, "w") as f:
         create_header(f)
-        create_strumming_exercises(f)
-        create_pentatonic_exercies(f, choice(range(len(CHROMATIC_SCALE))))
-        create_bending_exercises(f, 5, 8)
-        create_slapping_exercises(f)
-        create_two_handed_tapping_exercises(f, range(1, 4), 4, 19)
+        picked_exercises = sample(exercises, 4)
+        for exercise in sorted(picked_exercises, key=exercises.index):
+            exercise(f)
     result = subprocess.run(f'lilypond "{args.file}" > NUL 2>&1', shell=True)
     generate_reference_page(args.file.with_suffix('.pdf'))
 
