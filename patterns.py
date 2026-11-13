@@ -34,18 +34,18 @@ CHROMATIC_SCALE = ["e", "f", "fis", "g", "aes", "a", "bes", "b", "c", "cis", "d"
 
 BASIC_CHORDS = ["c", "d", "e", "f", "fis", "g", "a", "bes", "b"]
 
-UNIVERSAL_VARIATIONS = ["", "7", "m", "m7", "sus", "5"]
+UNIVERSAL_VARIATIONS = ["", "7", "m", "m7", "sus", "5", "m11", "2", "maj7"]
 
 SPECIFIC_VARIATIONS = {
-    "c" : ["2", "maj7", "/g", "/e", "/b"],
-    "d" : ["2", "maj7", "/fis", "/a"],
-    "e" : ["2", "maj7"],
-    "f" : ["2", "maj7", "/a"],
+    "c" : ["/g", "/e", "/b"],
+    "d" : ["/fis", "/a"],
+    "e" : [],
+    "f" : ["/a"],
     "fis" : [],
-    "g" : ["2", "maj7", "/b", "/fis"],
-    "a" : ["2", "maj7"],
-    "bes" : ["2", "maj7"],
-    "b" : ["2", "maj7"],
+    "g" : ["/b", "/fis"],
+    "a" : [],
+    "bes" : [],
+    "b" : [],
 }
 
 ALTERNATE_PICKING_PATTERNS = [

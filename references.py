@@ -38,8 +38,8 @@ class GuitarReferenceGenerator:
             self, 
             guitar_references, 
             statusi=None,
-            metronome_check=2,
-            metronome_valid=["Needs refinement", "Done"]
+            metronome_check=3,
+            metronome_valid=["In progress", "Needs refinement", "Done"]
         ):
         # Default statusi if not provided
         if statusi is None:
@@ -100,7 +100,7 @@ class GuitarReferenceGenerator:
         
         legend_table.setStyle(TableStyle(legend_style))
         story.append(legend_table)
-        story.append(Spacer(1, 24))
+        story.append(Spacer(1, 12))
 
         # --- Section: Metronome ---
         story.append(Paragraph("<b>Metronome Focus</b>", styles['Heading2']))
@@ -118,7 +118,7 @@ class GuitarReferenceGenerator:
                 ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
             ]))
             story.append(m_table)
-        story.append(Spacer(1, 24))
+        story.append(Spacer(1, 12))
 
         # --- Section: General References (By Capo) ---
         story.append(Paragraph("<b>General References (By Capo)</b>", styles['Heading2']))
