@@ -133,30 +133,31 @@ def create_bending_exercises(f, start_fret, end_fret, num=5):
     f.write("\n\t}\n")
     f.write(">>\n")
 
-def create_two_handed_tapping_exercises(f, strings, start_fret, end_fret):
+def create_two_handed_tapping_exercises(f, strings, start_fret, end_fret, length = 4):
     ADJUSTMENTS = {1:0, 2:7, 3:3}
     f.write("<<\n\t\\new ChordNames {\n\t\t\\chordmode {\n\t\t\t")
-    memory = []
-    for i in range(len(TAPPING_PATTERNS)):
-        string = choice(strings)
-        index = choice(range(len(CHROMATIC_SCALE)))
-        note = CHROMATIC_SCALE[(index + ADJUSTMENTS[string]) % len(CHROMATIC_SCALE)]
-        is_major = choice([0, 1]) == 1
-        tones = pick_tap(index, is_major, start_fret, end_fret)
-        if (is_major):
-            f.write(f"{note}1 ")
-        else:
-            f.write(f"{note}1:m ")
-        memory.append([string, tones])
+    pattern = choice(TAPPING_PATTERNS)
+    string = choice(strings)
+    index = choice(range(len(CHROMATIC_SCALE)))
+    note = CHROMATIC_SCALE[(index + ADJUSTMENTS[string]) % len(CHROMATIC_SCALE)]
+    is_major = choice([0, 1]) == 1
+    tones = pick_tap(index, is_major, start_fret, end_fret)
+    if (is_major):
+        f.write(f"{note}1 ")
+    else:
+        f.write(f"{note}1:m ")
+    base = [string, tones]
     f.write("\n\t\t}\n\t}\n\t\\new TabStaff {\n\t\t")
 
-    for i in range(len(TAPPING_PATTERNS)):
-        if len(TAPPING_PATTERNS[i]) == 3:
+    direction = 1 if base[1][0] <= 7 else -1
+    for i in list(range(length)) + list(reversed(range(length - 1))):
+        if len(pattern) == 3:
             f.write("\\tuplet 3/4 { ")
-        for j in TAPPING_PATTERNS[i]:
-            f.write(f'{match_note_string(memory[i][0], memory[i][1][j], 4)} ')
-        if len(TAPPING_PATTERNS[i]) == 3:
+        for j in pattern:
+            f.write(f'{match_note_string(base[0], base[1][j] + i * direction, 4)} ')
+        if len(pattern) == 3:
             f.write("} ")
+
     f.write("\n\t}\n")
     f.write(">>\n")
 
@@ -199,12 +200,6 @@ def create_sweep_exercises(f):
     f.write("\n\t}\n")
     f.write(">>\n")
 
-def create_picking_exercises(f):
-    pass
-
-def create_palm_muting_exercises(f):
-    pass
-
 def create_slapping_exercises(f, num=6):
     f.write("<<\n\t\\new ChordNames {\n\t\t\\chordmode {\n") 
     f.write(f"\t\t\t{create_line(BASIC_CHORDS, num)}\n")
@@ -245,7 +240,7 @@ def generate():
         picked_exercises = sample(exercises, 3)
         for exercise in sorted(picked_exercises, key=exercises.index):
             exercise(f)
-    result = subprocess.run(f'lilypond "{args.file}" > NUL 2>&1', shell=True)
+    subprocess.run(f'lilypond "{args.file}" > NUL 2>&1', shell=True)
     generate_reference_page(args.file.with_suffix('.pdf'))
 
 if __name__ == "__main__":
