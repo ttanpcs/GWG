@@ -180,7 +180,6 @@ def get_all_references():
             response = requests.post(url, json=payload, headers=headers)
             data = response.json()
             results.extend(data["results"])
-
         useful_data = [ 
             GuitarReference(
             page["properties"]["Name"]["title"][0]["plain_text"], 
@@ -189,7 +188,8 @@ def get_all_references():
             page["properties"]["Status"]["status"]["name"],
             page["properties"]["BPM"]["number"],
             )
-            for page in data["results"]
+            for page in results
+            if len(page["properties"]["Instrument"]["multi_select"]) == 1 and page["properties"]["Instrument"]["multi_select"][0].get("name") == "Guitar"
         ]
 
         return GuitarReferenceGenerator(useful_data)
